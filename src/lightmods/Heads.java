@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Set;
 import javax.imageio.ImageIO;
 
-/** Голова скина аккаунта: свой скин из библиотеки, скин с сервера (Microsoft / Ely.by) или стандартный Стив/Алекс. */
+/** Голова скина аккаунта: свой скин из библиотеки или скин с сервера (Microsoft / Ely.by). Нет скина — плитка с буквой ника. */
 public final class Heads {
     private Heads() {
     }
@@ -23,38 +23,6 @@ public final class Heads {
     private static final Map<String, BufferedImage> CACHE = new ConcurrentHashMap<>();
     private static final Set<String> LOADING = ConcurrentHashMap.newKeySet();
     private static final Set<String> MISSING = ConcurrentHashMap.newKeySet();
-
-    // ------------------------------------------------------------------ стандартные головы
-
-    private static BufferedImage pixelHead(String[] rows, Map<Character, Integer> pal) {
-        BufferedImage im = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < 8; y++) {
-            for (int x = 0; x < 8; x++) im.setRGB(x, y, 0xFF000000 | pal.get(rows[y].charAt(x)));
-        }
-        return im;
-    }
-
-    private static final BufferedImage STEVE = pixelHead(
-            new String[]{"HHHHHHHH", "HHHHHHHH", "HSSSSSSH", "SWBSSBWS", "SSSNNSSS", "SSNNNNSS", "SSMMMMSS", "SSSMMSSS"},
-            Map.of('H', 0x4A3728, 'S', 0xB68764, 'N', 0x9F6F4B, 'W', 0xFFFFFF, 'B', 0x3F3FA0, 'M', 0x6B4630));
-    private static final BufferedImage ALEX = pixelHead(
-            new String[]{"HHHHHHHH", "HHHHHHHH", "HSSSSSSH", "SWGSSGWS", "SSSNNSSS", "SSSSSSSS", "SSSRRSSS", "HSSSSSSH"},
-            Map.of('H', 0xC9772F, 'S', 0xD9A27E, 'N', 0xC48A68, 'W', 0xFFFFFF, 'G', 0x3F7F3F, 'R', 0xB5614E));
-
-    /** Какой из стандартных скинов у аккаунта: как в игре — по чётности хеша UUID (для офлайна — по нику). */
-    static boolean alex(Account a) {
-        try {
-            String h = a.uuid.replace("-", "");
-            java.util.UUID u = new java.util.UUID(Long.parseUnsignedLong(h.substring(0, 16), 16), Long.parseUnsignedLong(h.substring(16), 16));
-            return (u.hashCode() & 1) == 1;
-        } catch (RuntimeException e) {
-            return (a.name.hashCode() & 1) == 1;
-        }
-    }
-
-    static BufferedImage fallback(Account a) {
-        return a == null || !alex(a) ? STEVE : ALEX;
-    }
 
     // ------------------------------------------------------------------ вырезание головы
 
@@ -80,10 +48,10 @@ public final class Heads {
 
     /** Картинка головы для аккаунта; null — пока грузится (будет вызван repaint компонента). */
     private static BufferedImage image(Account a, Component repaint) {
-        if (a == null) return STEVE;
+        if (a == null) return null;
         if (!a.isOnline()) {
             Skins.Skin s = Skins.active(a.key());
-            if (s == null) return fallback(a);
+            if (s == null) return null;
             String key = "local:" + s.id;
             BufferedImage c = CACHE.get(key);
             if (c != null) return c;
@@ -92,7 +60,7 @@ public final class Heads {
                 CACHE.put(key, im);
                 return im;
             } catch (Exception e) {
-                return fallback(a);
+                return null;
             }
         }
         String key = a.key();
@@ -109,7 +77,7 @@ public final class Heads {
                     BufferedImage skin = fetch(a);
                     if (skin != null) CACHE.put(key, headOf(skin));
                     else {
-                        Log.i("У аккаунта «" + a.name + "» нет скина на сервере — показываем стандартную голову");
+                        Log.i("У аккаунта «" + a.name + "» нет скина на сервере — показываем букву ника");
                         MISSING.add(key);
                         RETRY.put(key, System.currentTimeMillis());
                     }
@@ -123,7 +91,7 @@ public final class Heads {
                 }
             });
         }
-        return fallback(a);
+        return null;
     }
 
     /** Адрес скина из ответа сервера профилей (свойство textures, base64). */
@@ -183,8 +151,30 @@ public final class Heads {
 
     // ------------------------------------------------------------------ рисование
 
+    /** Нет своего скина — плитка с первой буквой ника. */
+    private static void paintLetter(Graphics2D g0, int x, int y, int s, Account a) {
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        String nm = a == null || a.name == null || a.name.isEmpty() ? "?" : a.name;
+        int hv = Math.abs(nm.hashCode());
+        double r = Math.max(4, s * 0.2);
+        g.setColor(Color.getHSBColor((hv % 360) / 360f, 0.45f, 0.55f));
+        g.fill(new RoundRectangle2D.Double(x, y, s, s, r, r));
+        g.setColor(Color.WHITE);
+        g.setFont(Ui.bold(s * 0.5f));
+        java.awt.FontMetrics fm = g.getFontMetrics();
+        String l = nm.substring(0, 1).toUpperCase();
+        g.drawString(l, x + (s - fm.stringWidth(l)) / 2, y + (s - fm.getHeight()) / 2 + fm.getAscent());
+        g.dispose();
+    }
+
     public static void paint(Graphics2D g0, int x, int y, int s, Account a, Component repaint) {
         BufferedImage im = image(a, repaint);
+        if (im == null) {
+            paintLetter(g0, x, y, s, a);
+            return;
+        }
         Graphics2D g = (Graphics2D) g0.create();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
