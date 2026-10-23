@@ -932,7 +932,7 @@ public final class Ui {
     public static JProgressBar progressBar() {
         // собственная анимация: перерисовываем всю шкалу целиком, иначе на Windows с масштабированием остаются «хвосты» прежних положений
         JProgressBar b = new JProgressBar(0, 1000) {
-            private final javax.swing.Timer anim = new javax.swing.Timer(33, e -> {
+            private final javax.swing.Timer anim = new javax.swing.Timer(50, e -> {
                 if (isIndeterminate() && isShowing()) repaint();
             });
 
@@ -1046,10 +1046,32 @@ public final class Ui {
     }
 
     /** Фон главной: только синее небо и пиксельные облака, которые медленно плывут (timeMs — текущее время). */
-    public static void paintHero(Graphics2D g, int w, int h, long timeMs) {
+    private static BufferedImage heroSky;
+    private static BufferedImage heroShade;
+
+    /** Неподвижные слои пейзажа рисуются один раз на размер окна: градиенты на всю площадь каждый кадр сильно грузят процессор. */
+    private static synchronized void heroLayers(int w, int h) {
+        if (heroSky != null && heroSky.getWidth() == w && heroSky.getHeight() == h) return;
+        heroSky = new BufferedImage(Math.max(1, w), Math.max(1, h), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = heroSky.createGraphics();
         g.setPaint(new GradientPaint(0, 0, new Color(0x2F7FE0), 0, h, new Color(0x9CCBFF)));
         g.fillRect(0, 0, w, h);
+        g.dispose();
+        heroShade = new BufferedImage(Math.max(1, w), Math.max(1, h), BufferedImage.TYPE_INT_ARGB);
+        g = heroShade.createGraphics();
+        g.setPaint(new GradientPaint(0, h * 0.30f, new Color(10, 12, 16, 0), 0, h, new Color(10, 12, 16, 215)));
+        g.fillRect(0, 0, w, h);
+        g.setPaint(new GradientPaint(0, 0, new Color(10, 12, 16, 120), w * 0.55f, 0, new Color(10, 12, 16, 0)));
+        g.fillRect(0, 0, w, h);
+        g.dispose();
+    }
+
+    public static void paintHero(Graphics2D g, int w, int h, long timeMs) {
+        heroLayers(w, h);
+        g.drawImage(heroSky, 0, 0, null);
         int b = Math.max(22, h / 20);
+        Color white = new Color(255, 255, 255, 225);
+        Color shade = new Color(214, 232, 252, 225);
         for (int i = 0; i < 10; i++) {
             int cw = b * (4 + hash(i, 13) % 5);
             double speed = 14 + hash(i, 14) % 26;
@@ -1058,16 +1080,13 @@ public final class Ui {
             int cx = (int) ((off + speed * timeMs / 1000.0) % span) - cw - b * 2;
             // верхняя и нижняя полосы: облака не заходят под заголовок и текст
             int cy = i % 2 == 0 ? b / 2 + hash(i, 12) % Math.max(1, (int) (h * 0.14)) : (int) (h * 0.50) + hash(i, 12) % Math.max(1, (int) (h * 0.2));
-            g.setColor(new Color(255, 255, 255, 225));
+            g.setColor(white);
             g.fillRect(cx, cy, cw, b);
             g.fillRect(cx + b, cy - b / 2, cw - b * 2, b / 2);
             g.fillRect(cx + b * 2, cy - b, Math.max(b, cw - b * 4), b / 2);
-            g.setColor(new Color(214, 232, 252, 225));
+            g.setColor(shade);
             g.fillRect(cx, cy + b - b / 3, cw, b / 3);
         }
-        g.setPaint(new GradientPaint(0, h * 0.6f, new Color(0, 0, 0, 0), 0, h, new Color(0, 0, 0, 140)));
-        g.fillRect(0, 0, w, h);
-        g.setPaint(new GradientPaint(0, 0, new Color(0, 0, 0, 90), w * 0.55f, 0, new Color(0, 0, 0, 0)));
-        g.fillRect(0, 0, w, h);
+        g.drawImage(heroShade, 0, 0, null);
     }
 }

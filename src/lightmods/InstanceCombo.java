@@ -95,6 +95,7 @@ public class InstanceCombo extends JComboBox<Mc.Profile> {
         }
 
         public static void paint(Graphics2D g, int x, int y, int s, Mc.Profile p) {
+            if (p.id != null && Icons.paint(g, x, y, s, p.id)) return;
             Color c;
             switch (p.loader) {
                 case "fabric":

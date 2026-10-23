@@ -3,6 +3,7 @@ package lightmods;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -287,9 +288,11 @@ public final class Game {
     // ------------------------------------------------------------------ скачивание
 
     private static final class Pool {
-        final ExecutorService ex = Executors.newFixedThreadPool(16, r -> {
+        // не больше 8 потоков и пониженный приоритет: тысячи мелких файлов с TLS-рукопожатиями иначе забивают процессор и тормозят интерфейс
+        final ExecutorService ex = Executors.newFixedThreadPool(Math.max(4, Math.min(8, Runtime.getRuntime().availableProcessors())), r -> {
             Thread t = new Thread(r, "lightmods-dl");
             t.setDaemon(true);
+            t.setPriority(Thread.NORM_PRIORITY - 2);
             return t;
         });
         final List<Future<?>> fs = new ArrayList<>();
@@ -519,6 +522,8 @@ public final class Game {
             long size = sizes.get(hash);
             Path obj = assets.resolve("objects").resolve(hash.substring(0, 2)).resolve(hash);
             List<String> names = e.getValue();
+            // уже скачанное и не требующее копий не ставим в очередь: при запуске игры это тысячи лишних задач
+            if (fresh(obj, size) && !virtual && !mapRes) continue;
             pool.submit(() -> {
                 fetch(RESOURCES + hash.substring(0, 2) + "/" + hash, obj, hash, size);
                 if (virtual || mapRes) {
@@ -557,9 +562,10 @@ public final class Game {
         Files.createDirectories(nativesDir);
         for (Lib l : libs) {
             if (!l.extract || !Files.isRegularFile(l.path)) continue;
-            try (ZipInputStream z = new ZipInputStream(Files.newInputStream(l.path))) {
-                ZipEntry e;
-                while ((e = z.getNextEntry()) != null) {
+            try (java.util.zip.ZipFile z = new java.util.zip.ZipFile(l.path.toFile())) {
+                java.util.Enumeration<? extends ZipEntry> en = z.entries();
+                while (en.hasMoreElements()) {
+                    ZipEntry e = en.nextElement();
                     if (e.isDirectory()) continue;
                     String n = e.getName();
                     boolean skip = false;
@@ -567,8 +573,12 @@ public final class Game {
                     if (skip || n.startsWith("META-INF/")) continue;
                     Path out = nativesDir.resolve(n).normalize();
                     if (!out.startsWith(nativesDir)) continue;
+                    // уже распакованное не трогаем: заново писать DLL при каждом запуске долго, а антивирус проверяет их снова
+                    if (e.getSize() >= 0 && Files.isRegularFile(out) && Files.size(out) == e.getSize()) continue;
                     Files.createDirectories(out.getParent());
-                    Files.copy(z, out, StandardCopyOption.REPLACE_EXISTING);
+                    try (InputStream in = z.getInputStream(e)) {
+                        Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }
             }
         }
@@ -615,6 +625,7 @@ public final class Game {
     /** Скачивает всё нужное и собирает команду запуска. */
     public static Plan prepare(Mc.Profile prof, Account.Session acc, Progress p) throws IOException {
         if (prof == null || prof.versionId == null) throw new IOException("Не выбрана установка");
+        final long t0 = System.nanoTime();
         String vid = prof.versionId;
         Map<String, Object> v = resolveVersion(vid);
         String jarId = Json.str(v, "lightmods.jarId", vid);
@@ -741,8 +752,15 @@ public final class Game {
         plan.workDir = gameDir;
         plan.versionId = vid;
         plan.command.add(java.toAbsolutePath().toString());
-        plan.command.add("-Xmx" + Math.max(512, Mc.ramMb) + "M");
-        plan.command.add("-Xms" + Math.min(512, Math.max(256, Mc.ramMb / 4)) + "M");
+        int ram = Mc.autoRam ? Ram.recommended(prof) : Math.max(512, Mc.ramMb);
+        plan.command.add("-Xmx" + ram + "M");
+        // стартовый размер кучи побольше: иначе тяжёлая сборка при загрузке много раз расширяет память и делает полные сборки мусора
+        plan.command.add("-Xms" + (Mc.optimizeJvm ? Math.min(ram, 2048) : Math.min(512, Math.max(256, ram / 4))) + "M");
+        boolean userGc = Mc.jvmArgs != null && Mc.jvmArgs.contains("XX:+Use");
+        if (Mc.optimizeJvm && !userGc) {
+            for (String a : Ram.JVM_FLAGS) plan.command.add(a);
+        }
+        Log.i("Память игры: " + ram + " МБ" + (Mc.autoRam ? " (авто)" : "") + (Mc.optimizeJvm ? ", оптимизация JVM включена" : ""));
         if (Mc.jvmArgs != null && !Mc.jvmArgs.isBlank()) {
             for (String a : Mc.jvmArgs.trim().split("\\s+")) plan.command.add(a);
         }
@@ -763,6 +781,7 @@ public final class Game {
         plan.command.add(Json.str(v, "mainClass", "net.minecraft.client.main.Main"));
         plan.command.addAll(game);
         p.set(1.0, "Запуск игры");
+        Log.i("Подготовка запуска заняла " + (System.nanoTime() - t0) / 1_000_000 + " мс");
         return plan;
     }
 

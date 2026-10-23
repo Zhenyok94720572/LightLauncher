@@ -44,6 +44,10 @@ public final class Mc {
     /** Настройки запуска. */
     public static volatile String javaPath = "";
     public static volatile int ramMb = 3072;
+    /** Память подбирается автоматически по установке (по умолчанию включено). */
+    public static volatile boolean autoRam = true;
+    /** Ускоряющие флаги JVM для игры (по умолчанию включено). */
+    public static volatile boolean optimizeJvm = true;
     public static volatile String jvmArgs = "";
     public static volatile String msClientId = "";
 
@@ -101,6 +105,8 @@ public final class Mc {
                 javaPath = Json.str(m, "javaPath", "");
                 jvmArgs = Json.str(m, "jvmArgs", "");
                 msClientId = Json.str(m, "msClientId", "");
+                if (m.containsKey("autoRam")) autoRam = Json.bool(m, "autoRam");
+                if (m.containsKey("optimizeJvm")) optimizeJvm = Json.bool(m, "optimizeJvm");
                 long r = Json.num(m, "ramMb");
                 if (r >= 512) ramMb = (int) r;
             }
@@ -122,6 +128,8 @@ public final class Mc {
             m.put("jvmArgs", jvmArgs);
             m.put("msClientId", msClientId);
             m.put("ramMb", (long) ramMb);
+            m.put("autoRam", autoRam);
+            m.put("optimizeJvm", optimizeJvm);
             Files.writeString(CFG, Json.stringify(m, true));
         } catch (Exception e) {
             Log.i("Не удалось сохранить конфиг: " + e.getMessage());

@@ -127,11 +127,33 @@ public final class SettingsPanel extends JPanel {
         page.getVerticalScrollBar().setUnitIncrement(24);
         add(page, BorderLayout.CENTER);
 
-        for (String l : Log.history()) log.append(l + "\n");
-        Log.setSink(line -> SwingUtilities.invokeLater(() -> {
-            log.append(line + "\n");
+        StringBuilder initial = new StringBuilder();
+        for (String l : Log.history()) initial.append(l).append('\n');
+        log.setText(initial.toString());
+        // строки журнала копятся и выводятся пачкой: игра пишет тысячи строк при старте, построчное добавление в окно подвешивало интерфейс
+        java.util.concurrent.ConcurrentLinkedQueue<String> pending = new java.util.concurrent.ConcurrentLinkedQueue<>();
+        javax.swing.Timer flush = new javax.swing.Timer(300, e -> {
+            if (pending.isEmpty() || !isShowing()) return;
+            StringBuilder sb = new StringBuilder();
+            String l;
+            while ((l = pending.poll()) != null) sb.append(l).append('\n');
+            log.append(sb.toString());
+            int max = 4000;
+            int lines = log.getLineCount();
+            if (lines > max) {
+                try {
+                    log.getDocument().remove(0, log.getLineStartOffset(lines - max));
+                } catch (javax.swing.text.BadLocationException ignored) {
+                    // уже обрезано
+                }
+            }
             log.setCaretPosition(log.getDocument().getLength());
-        }));
+        });
+        flush.start();
+        Log.setSink(line -> {
+            pending.add(line);
+            while (pending.size() > 6000) pending.poll();
+        });
     }
 
     private JPanel buildSupportCard() {
@@ -244,6 +266,8 @@ public final class SettingsPanel extends JPanel {
 
     private final Ui.Field javaField = new Ui.Field("Автоматически (скачается нужная версия)");
     private final Ui.Field ramField = new Ui.Field("3072");
+    private final javax.swing.JCheckBox autoRamCb = Ui.check("Выбирать память автоматически", true);
+    private final javax.swing.JCheckBox optCb = Ui.check("Оптимизировать запуск (флаги JVM)", true);
     private final Ui.Field argsField = new Ui.Field("Доп. аргументы JVM, например -XX:+UseG1GC");
     private final Ui.Field cidField = new Ui.Field("Azure Client ID (для входа Microsoft)");
 
@@ -294,7 +318,15 @@ public final class SettingsPanel extends JPanel {
         c.insets = new Insets(6, 0, 0, 0);
         ramField.setText(String.valueOf(Mc.ramMb));
         RamSlider rs = new RamSlider(Mc.ramMb, v -> ramField.setText(String.valueOf(v)));
+        rs.setEnabled(!Mc.autoRam);
+        autoRamCb.setSelected(Mc.autoRam);
+        autoRamCb.addActionListener(e -> rs.setEnabled(!autoRamCb.isSelected()));
+        card.add(autoRamCb, c);
+        c.gridy++;
         card.add(rs, c);
+        c.gridy++;
+        optCb.setSelected(Mc.optimizeJvm);
+        card.add(optCb, c);
         c.gridy++;
         c.insets = new Insets(12, 0, 0, 0);
         card.add(Ui.label("Дополнительные аргументы JVM", 13f, Ui.MUTED, false), c);
@@ -328,6 +360,8 @@ public final class SettingsPanel extends JPanel {
             }
             Mc.ramMb = Math.max(512, Math.min(65536, ram));
             ramField.setText(String.valueOf(Mc.ramMb));
+            Mc.autoRam = autoRamCb.isSelected();
+            Mc.optimizeJvm = optCb.isSelected();
             Mc.javaPath = javaField.getText().trim();
             Mc.jvmArgs = argsField.getText().trim();
             Mc.msClientId = cidField.getText().trim();

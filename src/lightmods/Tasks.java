@@ -39,6 +39,11 @@ public final class Tasks {
     private Tasks() {
     }
 
+    /** Идёт ли сейчас какая-нибудь установка или загрузка. */
+    public static boolean busy() {
+        return PENDING.get() > 0;
+    }
+
     /** Запускает установку в очереди. onDone вызывается в потоке интерфейса: null — успех, иначе ошибка. */
     public static void run(String title, Job job, Consumer<Exception> onDone) {
         int n = PENDING.incrementAndGet();

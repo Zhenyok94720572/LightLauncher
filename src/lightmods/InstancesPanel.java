@@ -44,6 +44,12 @@ public final class InstancesPanel extends JPanel {
         Ui.McButton select = new Ui.McButton("Выбрать", Ui.McButton.Kind.GREEN).size(13f);
         Ui.McButton content = new Ui.McButton("Содержимое", Ui.McButton.Kind.DARK).size(13f);
         Ui.McButton folder = new Ui.McButton("Папка", Ui.McButton.Kind.DARK).size(13f);
+        Ui.McButton icon = new Ui.McButton("Значок…", Ui.McButton.Kind.DARK).size(13f);
+        icon.addActionListener(e -> {
+            Mc.Profile p = profList.getSelectedValue();
+            if (p == null) Dlg.message(this, "Выберите установку", "Выберите в списке установку, для которой нужен значок.");
+            else IconPicker.pick(this, p);
+        });
         Ui.McButton remove = new Ui.McButton("Удалить", Ui.McButton.Kind.DARK).size(13f);
         select.addActionListener(e -> {
             Mc.Profile p = profList.getSelectedValue();
@@ -77,7 +83,7 @@ public final class InstancesPanel extends JPanel {
             Mc.Installed v = Dlg.choose(this, "Скачанные версии", "Выберите уже скачанную версию — для неё будет создана отдельная изолированная установка.", vs);
             if (v != null) isolateVersion(v.id, v.id);
         });
-        add(section("Установки", "Все установки лаунчера. «Изолировать» создаёт для версии отдельную папку игры: свои моды, миры и настройки.", profList, select, isolate, fromVer, content, folder, remove));
+        add(section("Установки", "Все установки лаунчера. «Изолировать» создаёт для версии отдельную папку игры: свои моды, миры и настройки.", profList, select, isolate, fromVer, content, icon, folder, remove));
 
         State.addListener(this::reloadProfiles);
         reloadProfiles();

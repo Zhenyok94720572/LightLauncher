@@ -456,5 +456,14 @@
 "Проблема с видеодрайвером или OpenGL. Обновите драйвер видеокарты; если стоит шейдер-мод — попробуйте без него.": "Graphics driver or OpenGL problem. Update your GPU driver; if you use a shader mod, try without it.",
 "Java не смогла выделить столько памяти. Уменьшите «Память для игры» в Настройках.": "Java could not reserve that much memory. Lower “Game memory” in Settings.",
 "Игра закрыта": "Game closed",
-"Light Launcher 1.1 · Java лаунчера: ": "Light Launcher 1.1 · launcher Java: "
+"Light Launcher 1.1 · Java лаунчера: ": "Light Launcher 1.1 · launcher Java: ",
+"Значок…": "Icon…",
+"Значок установки": "Instance icon",
+"Свой файл…": "Custom file…",
+"По умолчанию": "Default",
+"Выберите картинку": "Choose an image",
+"Не удалось поставить значок": "Could not set icon",
+"Выберите в списке установку, для которой нужен значок.": "Select the instance in the list that needs an icon.",
+"Выбирать память автоматически": "Choose memory automatically",
+"Оптимизировать запуск (флаги JVM)": "Optimize launch (JVM flags)"
 }

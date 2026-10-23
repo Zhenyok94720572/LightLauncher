@@ -34,11 +34,6 @@ public final class HomePanel extends JPanel {
                 int w = getWidth();
                 int h = getHeight();
                 Ui.paintHero(g, w, h, System.currentTimeMillis());
-                // затемнение снизу, чтобы карточки читались на любом фоне
-                g.setPaint(new java.awt.GradientPaint(0, h * 0.30f, new Color(10, 12, 16, 0), 0, h, new Color(10, 12, 16, 215)));
-                g.fillRect(0, 0, w, h);
-                g.setPaint(new java.awt.GradientPaint(0, 0, new Color(10, 12, 16, 120), w * 0.55f, 0, new Color(10, 12, 16, 0)));
-                g.fillRect(0, 0, w, h);
                 int pad = 48;
                 int s = 76;
                 int y = 40;
@@ -57,7 +52,17 @@ public final class HomePanel extends JPanel {
             }
         };
         hero.setOpaque(false);
-        javax.swing.Timer anim = new javax.swing.Timer(40, e -> hero.repaint());
+        // облака плывут только пока окно видно и активно; во время загрузок кадров меньше, чтобы не мешать скачиванию
+        javax.swing.Timer anim = new javax.swing.Timer(50, null);
+        long[] lastFrame = {0};
+        anim.addActionListener(e -> {
+            java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(hero);
+            if (w == null || !w.isActive() || (w instanceof java.awt.Frame && (((java.awt.Frame) w).getExtendedState() & java.awt.Frame.ICONIFIED) != 0)) return;
+            long now = System.currentTimeMillis();
+            if (now - lastFrame[0] < (Tasks.busy() || isAnyGameRunning() ? 140 : 45)) return;
+            lastFrame[0] = now;
+            hero.repaint();
+        });
         hero.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0) {
                 if (hero.isShowing()) anim.start();
@@ -190,6 +195,11 @@ public final class HomePanel extends JPanel {
             if (p != null && Game.isRunning(p.id)) updatePlay();
         }).start();
         update();
+    }
+
+    private static boolean isAnyGameRunning() {
+        Mc.Profile p = State.current();
+        return p != null && Game.isRunning(p.id);
     }
 
     private static JPanel statLine(String head, JLabel val) {
