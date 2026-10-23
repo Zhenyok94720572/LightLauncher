@@ -78,7 +78,7 @@ public final class SettingsPanel extends JPanel {
         c.gridwidth = 4;
         c.insets = new Insets(14, 0, 0, 0);
         Ui.Note info = new Ui.Note(640, 3, 12.5f, Ui.MUTED);
-        info.setText("Light Launcher 1.1 (эксперимент) · Java лаунчера: " + System.getProperty("java.version") + "\nДанные модов берутся с Modrinth (modrinth.com). По умолчанию лаунчер работает в своей папке и не трогает оригинальный .minecraft.");
+        info.setText("Light Launcher 1.1 · Java лаунчера: " + System.getProperty("java.version") + "\nДанные модов берутся с Modrinth (modrinth.com). По умолчанию лаунчер работает в своей папке и не трогает оригинальный .minecraft.");
         card.add(info, c);
         JPanel north = new JPanel();
         north.setOpaque(false);

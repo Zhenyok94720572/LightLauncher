@@ -705,7 +705,7 @@ public final class Game {
         vars.put("version_type", Json.str(v, "type", "release"));
         vars.put("natives_directory", natives.toAbsolutePath().toString());
         vars.put("launcher_name", "Light Launcher");
-        vars.put("launcher_version", "1.0");
+        vars.put("launcher_version", "1.1");
         vars.put("classpath", cp.toString());
         vars.put("classpath_separator", sep);
         vars.put("library_directory", Mc.dir.resolve("libraries").toAbsolutePath().toString());
@@ -723,7 +723,7 @@ public final class Game {
             List<String> head = new ArrayList<>();
             head.add("-Djava.library.path=" + natives.toAbsolutePath());
             head.add("-Dminecraft.launcher.brand=Light Launcher");
-            head.add("-Dminecraft.launcher.version=1.0");
+            head.add("-Dminecraft.launcher.version=1.1");
             head.add("-cp");
             head.add(cp.toString());
             jvm.addAll(0, head);

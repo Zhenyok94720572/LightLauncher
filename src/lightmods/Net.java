@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** HTTP-слой: JSON, текст, байты, загрузка файлов с проверкой SHA-1 и прогрессом. */
 public final class Net {
-    public static final String UA = "LightLauncher/1.0 (Minecraft launcher)";
+    public static final String UA = "LightLauncher/1.1 (Minecraft launcher)";
 
     /** Прогресс скачивания одного файла: прочитано / всего (всего может быть -1). */
     public interface Bytes {

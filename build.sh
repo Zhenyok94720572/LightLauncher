@@ -4,7 +4,7 @@
 #                ./build.sh nojar      — только компиляция
 set -e
 cd "$(dirname "$0")"
-VER=1.0
+VER=1.1
 OUT=out
 rm -rf "$OUT" dist
 mkdir -p "$OUT/main" "$OUT/setup" "$OUT/stage" dist
