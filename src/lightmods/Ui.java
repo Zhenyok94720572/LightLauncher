@@ -52,17 +52,19 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
 
 /** Тема и самописные компоненты в стиле официального лаунчера Minecraft. */
 public final class Ui {
-    public static final Color SIDEBAR = new Color(0x1B1B1C);
-    public static final Color BG = new Color(0x262627);
-    public static final Color BAR = new Color(0x171718);
-    public static final Color CARD = new Color(0x313133);
-    public static final Color CARD_HI = new Color(0x3A3A3C);
-    public static final Color FIELD = new Color(0x1B1B1C);
-    public static final Color BORDER = new Color(0x454547);
-    public static final Color MUTED = new Color(0xA9A9AE);
-    public static final Color GREEN = new Color(0x3C8527);
-    public static final Color GREEN_HI = new Color(0x52A535);
-    public static final Color GREEN_LO = new Color(0x2A641C);
+    public static final Color SIDEBAR = new Color(0x15161A);
+    public static final Color BG = new Color(0x1D1E23);
+    public static final Color BAR = new Color(0x111215);
+    public static final Color CARD = new Color(0x26282E);
+    public static final Color CARD_HI = new Color(0x2F323A);
+    public static final Color FIELD = new Color(0x141519);
+    public static final Color BORDER = new Color(0x363943);
+    public static final Color MUTED = new Color(0x9CA0AB);
+    public static final Color GREEN = new Color(0x3A9A3E);
+    public static final Color GREEN_HI = new Color(0x56C25B);
+    public static final Color GREEN_LO = new Color(0x2A7230);
+    /** Тонкие разделители. */
+    public static final Color LINE = new Color(0x26282F);
 
     private static final String FAMILY = pickFamily();
 
@@ -413,49 +415,38 @@ public final class Ui {
             int w = getWidth();
             int h = getHeight();
             Color base;
-            Color hi;
-            Color lo;
             switch (kind) {
                 case GREEN:
                     base = GREEN;
-                    hi = GREEN_HI;
-                    lo = GREEN_LO;
                     break;
                 case GRAY:
-                    base = new Color(0x6C6C70);
-                    hi = new Color(0x8C8C91);
-                    lo = new Color(0x48484B);
+                    base = new Color(0x3A3D46);
                     break;
                 default:
-                    base = new Color(0x3B3B3D);
-                    hi = new Color(0x4F4F52);
-                    lo = new Color(0x2A2A2B);
+                    base = new Color(0x2B2D35);
             }
             boolean en = isEnabled();
             boolean pressed = en && getModel().isArmed() && getModel().isPressed();
-            if (!en) {
-                base = new Color(0x4A4A4C);
-                hi = new Color(0x58585B);
-                lo = new Color(0x39393B);
-            } else if (hover && !pressed) base = mix(base, Color.WHITE, 0.10);
-            g.setColor(base);
-            g.fillRect(0, 0, w, h);
-            g.setColor(pressed ? lo : hi);
-            g.fillRect(0, 0, w, 2);
-            g.fillRect(0, 0, 2, h);
-            g.setColor(pressed ? hi : lo);
-            g.fillRect(0, h - 3, w, 3);
-            g.fillRect(w - 2, 0, 2, h);
-            g.setColor(new Color(0, 0, 0, 170));
-            g.drawRect(0, 0, w - 1, h - 1);
+            if (!en) base = kind == Kind.GREEN ? new Color(0x2F4A33) : new Color(0x24262C);
+            else if (pressed) base = mix(base, Color.BLACK, 0.18);
+            else if (hover) base = mix(base, Color.WHITE, kind == Kind.GREEN ? 0.12 : 0.07);
+            double r = Math.min(12, h * 0.42);
+            if (kind == Kind.GREEN && en) {
+                // мягкое свечение под основной кнопкой
+                g.setColor(new Color(GREEN_HI.getRed(), GREEN_HI.getGreen(), GREEN_HI.getBlue(), hover ? 46 : 26));
+                g.fill(new RoundRectangle2D.Double(0, 2, w, h - 2, r + 2, r + 2));
+            }
+            g.setPaint(new GradientPaint(0, 0, mix(base, Color.WHITE, 0.06), 0, h, base));
+            g.fill(new RoundRectangle2D.Double(0, 0, w, h - 1, r, r));
+            g.setColor(kind == Kind.GREEN ? new Color(255, 255, 255, en ? 40 : 15) : new Color(255, 255, 255, en ? (hover ? 26 : 16) : 8));
+            g.setStroke(new BasicStroke(1f));
+            g.draw(new RoundRectangle2D.Double(0.5, 0.5, w - 1, h - 2, r, r));
             g.setFont(getFont());
             FontMetrics fm = g.getFontMetrics();
             String t = getText();
             int tx = (w - fm.stringWidth(t)) / 2;
-            int ty = (h - fm.getHeight()) / 2 + fm.getAscent() + (pressed ? 1 : -1);
-            g.setColor(new Color(0, 0, 0, en ? 140 : 70));
-            g.drawString(t, tx + 1, ty + 1);
-            g.setColor(en ? Color.WHITE : new Color(0xA0A0A3));
+            int ty = (h - fm.getHeight()) / 2 + fm.getAscent() + (pressed ? 1 : 0);
+            g.setColor(en ? Color.WHITE : new Color(0x8A8E99));
             g.drawString(t, tx, ty);
             g.dispose();
         }
@@ -475,8 +466,8 @@ public final class Ui {
             setFocusPainted(false);
             setHorizontalAlignment(LEFT);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(220, 46));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
+            setPreferredSize(new Dimension(220, 42));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -508,20 +499,20 @@ public final class Ui {
             int w = getWidth();
             int h = getHeight();
             if (selected) {
-                g.setColor(new Color(0x2E2E30));
-                g.fillRect(0, 0, w, h);
+                g.setColor(new Color(GREEN_HI.getRed(), GREEN_HI.getGreen(), GREEN_HI.getBlue(), 30));
+                g.fill(new RoundRectangle2D.Double(10, 3, w - 20, h - 6, 12, 12));
                 g.setColor(GREEN_HI);
-                g.fillRect(0, 0, 4, h);
+                g.fill(new RoundRectangle2D.Double(10, h / 2.0 - 9, 3.5, 18, 3.5, 3.5));
             } else if (hover) {
-                g.setColor(new Color(0x252527));
-                g.fillRect(0, 0, w, h);
+                g.setColor(new Color(255, 255, 255, 12));
+                g.fill(new RoundRectangle2D.Double(10, 3, w - 20, h - 6, 12, 12));
             }
-            Color c = selected ? Color.WHITE : (hover ? new Color(0xE6E6E8) : MUTED);
-            g.setColor(c);
-            glyph.paint(g, 20, (h - 22) / 2, 22);
-            g.setFont(selected ? bold(14.5f) : font(14.5f));
+            g.setColor(selected ? GREEN_HI : (hover ? new Color(0xE6E7EB) : MUTED));
+            glyph.paint(g, 26, (h - 20) / 2, 20);
+            g.setColor(selected ? Color.WHITE : (hover ? new Color(0xE6E7EB) : new Color(0xC3C6CE)));
+            g.setFont(selected ? bold(14f) : font(14f));
             FontMetrics fm = g.getFontMetrics();
-            g.drawString(getText(), 56, (h - fm.getHeight()) / 2 + fm.getAscent());
+            g.drawString(getText(), 58, (h - fm.getHeight()) / 2 + fm.getAscent());
             g.dispose();
         }
     }
@@ -570,14 +561,14 @@ public final class Ui {
             int h = getHeight();
             boolean sel = isSelected();
             g.setColor(sel ? GREEN : (hover ? CARD_HI : CARD));
-            g.fill(new RoundRectangle2D.Double(0, 0, w, h, 8, 8));
+            g.fill(new RoundRectangle2D.Double(0, 0, w, h, 18, 18));
             if (sel) {
                 g.setColor(GREEN_HI);
                 g.setStroke(new BasicStroke(1.5f));
-                g.draw(new RoundRectangle2D.Double(0.75, 0.75, w - 1.5, h - 1.5, 8, 8));
+                g.draw(new RoundRectangle2D.Double(0.75, 0.75, w - 1.5, h - 1.5, 18, 18));
             } else {
                 g.setColor(BORDER);
-                g.draw(new RoundRectangle2D.Double(0.5, 0.5, w - 1, h - 1, 8, 8));
+                g.draw(new RoundRectangle2D.Double(0.5, 0.5, w - 1, h - 1, 18, 18));
             }
             g.setFont(getFont());
             FontMetrics fm = g.getFontMetrics();
@@ -620,16 +611,16 @@ public final class Ui {
             int w = getWidth();
             int h = getHeight();
             g.setColor(FIELD);
-            g.fill(new RoundRectangle2D.Double(0, 0, w, h, 8, 8));
+            g.fill(new RoundRectangle2D.Double(0, 0, w, h, 10, 10));
             g.setColor(hasFocus() ? GREEN_HI : BORDER);
             g.setStroke(new BasicStroke(hasFocus() ? 1.6f : 1f));
-            g.draw(new RoundRectangle2D.Double(0.5, 0.5, w - 1, h - 1, 8, 8));
+            g.draw(new RoundRectangle2D.Double(0.5, 0.5, w - 1, h - 1, 10, 10));
             g.dispose();
             super.paintComponent(g0);
             if (getText().isEmpty() && placeholder != null) {
                 Graphics2D g2 = aa(g0);
                 g2.setFont(getFont());
-                g2.setColor(new Color(0x7D7D82));
+                g2.setColor(new Color(0x6D717C));
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(placeholder, getInsets().left, (h - fm.getHeight()) / 2 + fm.getAscent());
                 g2.dispose();
@@ -804,8 +795,16 @@ public final class Ui {
 
             @Override
             public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
+                // фон рисует update() целиком со скруглением
+            }
+
+            @Override
+            public void update(Graphics g0, JComponent c) {
+                Graphics2D g = aa(g0);
                 g.setColor(FIELD);
-                g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+                g.fill(new RoundRectangle2D.Double(0, 0, c.getWidth(), c.getHeight(), 10, 10));
+                g.dispose();
+                paint(g0, c);
             }
 
             @Override
@@ -820,6 +819,7 @@ public final class Ui {
                 };
                 p.setBorder(new LineBorder(BORDER));
                 p.getList().setBackground(FIELD);
+                p.getList().setSelectionBackground(new Color(0x2F6B34));
                 p.getList().setForeground(Color.WHITE);
                 p.getList().setSelectionBackground(GREEN);
                 p.getList().setSelectionForeground(Color.WHITE);
@@ -829,7 +829,8 @@ public final class Ui {
         cb.setBackground(FIELD);
         cb.setForeground(Color.WHITE);
         cb.setFont(font(14f));
-        cb.setBorder(new LineBorder(BORDER));
+        cb.setBorder(new RoundBorder(BORDER, 10));
+        cb.setOpaque(false);
         cb.setMaximumRowCount(12);
         cb.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         cb.setRenderer(new DefaultListCellRenderer() {
@@ -843,6 +844,30 @@ public final class Ui {
                 return c;
             }
         });
+    }
+
+    /** Скруглённая рамка для полей и списков. */
+    public static final class RoundBorder extends javax.swing.border.AbstractBorder {
+        private final Color color;
+        private final int radius;
+
+        public RoundBorder(Color color, int radius) {
+            this.color = color;
+            this.radius = radius;
+        }
+
+        @Override
+        public void paintBorder(Component c, Graphics g0, int x, int y, int w, int h) {
+            Graphics2D g = aa(g0);
+            g.setColor(color);
+            g.draw(new RoundRectangle2D.Double(x + 0.5, y + 0.5, w - 1, h - 1, radius, radius));
+            g.dispose();
+        }
+
+        @Override
+        public Insets getBorderInsets(Component c) {
+            return new Insets(1, 4, 1, 2);
+        }
     }
 
     public static void styleScroll(JScrollPane sp) {
@@ -884,16 +909,15 @@ public final class Ui {
 
         @Override
         protected void paintTrack(Graphics g, JComponent c, Rectangle r) {
-            g.setColor(new Color(0, 0, 0, 40));
-            g.fillRect(r.x, r.y, r.width, r.height);
+            // дорожка прозрачная
         }
 
         @Override
         protected void paintThumb(Graphics g0, JComponent c, Rectangle r) {
             if (r.isEmpty()) return;
             Graphics2D g = aa(g0);
-            g.setColor(isThumbRollover() || isDragging ? new Color(0x8A8A8F) : new Color(0x66666B));
-            g.fill(new RoundRectangle2D.Double(r.x + 2, r.y + 2, r.width - 4, r.height - 4, 8, 8));
+            g.setColor(isThumbRollover() || isDragging ? new Color(0x6E7380) : new Color(0x474B56));
+            g.fill(new RoundRectangle2D.Double(r.x + 3, r.y + 2, r.width - 6, r.height - 4, r.width - 6, r.width - 6));
             g.dispose();
         }
 
@@ -964,11 +988,11 @@ public final class Ui {
 
     public static void card(Graphics2D g, int x, int y, int w, int h, Color fill, Color border) {
         g.setColor(fill);
-        g.fill(new RoundRectangle2D.Double(x, y, w, h, 12, 12));
+        g.fill(new RoundRectangle2D.Double(x, y, w, h, 14, 14));
         if (border != null) {
             g.setColor(border);
             g.setStroke(new BasicStroke(1f));
-            g.draw(new RoundRectangle2D.Double(x + 0.5, y + 0.5, w - 1, h - 1, 12, 12));
+            g.draw(new RoundRectangle2D.Double(x + 0.5, y + 0.5, w - 1, h - 1, 14, 14));
         }
     }
 

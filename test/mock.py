@@ -11,6 +11,14 @@ def png(color):
         return c + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
 
+def png64(color):
+    w = h = 64
+    raw = b''.join(b'\x00' + bytes(color) * w for _ in range(h))
+    def chunk(t, d):
+        c = struct.pack('>I', len(d)) + t + d
+        return c + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
+
 FILES = {}
 def add_file(path, data):
     FILES[path] = data
@@ -22,6 +30,7 @@ client_sha = add_file('/files/client-1.21.1.jar', b'FAKECLIENTJAR' * 100)
 sodium_sha = add_file('/files/sodium.jar', b'sodium-bytes' * 50)
 api_sha = add_file('/files/fabric-api.jar', b'fabricapi-bytes' * 50)
 empm_sha = add_file('/files/enablemultiplayermode-1.0.jar', b'empm-bytes' * 40)
+add_file('/files/skin.png', png64((30, 144, 255)))
 rp_sha = add_file('/files/pack.zip', b'resourcepack-bytes' * 50)
 sh_sha = add_file('/files/shader.zip', b'shader-bytes' * 50)
 for i, col in enumerate([(200, 60, 60), (60, 160, 90), (70, 110, 210), (220, 170, 40)]):
@@ -108,6 +117,10 @@ class H(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urllib.parse.urlparse(self.path); q = urllib.parse.parse_qs(u.query); p = u.path
+        if p.startswith('/elyapi/sessionserver/session/minecraft/profile/') or p.startswith('/mojprofile/'):
+            import base64
+            tex = base64.b64encode(json.dumps({"textures": {"SKIN": {"url": HOST + "/files/skin.png"}}}).encode()).decode()
+            return self.send(200, {"id": p.rsplit('/', 1)[1], "name": "x", "properties": [{"name": "textures", "value": tex}]})
         if p in FILES: return self.send(200, FILES[p], 'application/octet-stream')
         if p == '/v2/search':
             facets = json.loads(q.get('facets', ['[]'])[0]); t = 'mod'

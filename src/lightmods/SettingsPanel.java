@@ -78,7 +78,7 @@ public final class SettingsPanel extends JPanel {
         c.gridwidth = 4;
         c.insets = new Insets(14, 0, 0, 0);
         Ui.Note info = new Ui.Note(640, 3, 12.5f, Ui.MUTED);
-        info.setText("Light Launcher 1.0 · Java лаунчера: " + System.getProperty("java.version") + "\nДанные модов берутся с Modrinth (modrinth.com). По умолчанию лаунчер работает в своей папке и не трогает оригинальный .minecraft.");
+        info.setText("Light Launcher 1.1 (эксперимент) · Java лаунчера: " + System.getProperty("java.version") + "\nДанные модов берутся с Modrinth (modrinth.com). По умолчанию лаунчер работает в своей папке и не трогает оригинальный .minecraft.");
         card.add(info, c);
         JPanel north = new JPanel();
         north.setOpaque(false);
@@ -289,11 +289,12 @@ public final class SettingsPanel extends JPanel {
         c.gridwidth = 2;
         c.weightx = 1;
         c.insets = new Insets(12, 0, 0, 0);
-        card.add(Ui.label("Память для игры, МБ", 13f, Ui.MUTED, false), c);
+        card.add(Ui.label("Память для игры", 13f, Ui.MUTED, false), c);
         c.gridy++;
         c.insets = new Insets(6, 0, 0, 0);
         ramField.setText(String.valueOf(Mc.ramMb));
-        card.add(ramField, c);
+        RamSlider rs = new RamSlider(Mc.ramMb, v -> ramField.setText(String.valueOf(v)));
+        card.add(rs, c);
         c.gridy++;
         c.insets = new Insets(12, 0, 0, 0);
         card.add(Ui.label("Дополнительные аргументы JVM", 13f, Ui.MUTED, false), c);

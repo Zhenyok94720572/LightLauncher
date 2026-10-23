@@ -34,7 +34,7 @@ public final class MainFrame extends JFrame {
         super("Light Launcher");
         setIconImages(Ui.iconImages());
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1000, 660));
+        setMinimumSize(new Dimension(1080, 660));
         setSize(1180, 760);
         setLocationRelativeTo(null);
         Tasks.bar = status;
@@ -64,6 +64,8 @@ public final class MainFrame extends JFrame {
         root.add(status, BorderLayout.SOUTH);
 
         show("home");
+        Toast.install(getRootPane());
+        installShortcuts();
         State.refresh();
         Tasks.IO.submit(() -> {
             try {
@@ -81,7 +83,7 @@ public final class MainFrame extends JFrame {
             protected void paintComponent(Graphics g) {
                 g.setColor(Ui.SIDEBAR);
                 g.fillRect(0, 0, getWidth(), getHeight());
-                g.setColor(new Color(0x2C2C2E));
+                g.setColor(Ui.LINE);
                 g.fillRect(getWidth() - 1, 0, 1, getHeight());
             }
         };
@@ -110,13 +112,13 @@ public final class MainFrame extends JFrame {
         side.add(brand);
 
         addNav(side, "home", "Главная", Ui.HOME);
-        side.add(Box(10));
+        side.add(section("КАТАЛОГ"));
         addNav(side, "mods", "Моды", Ui.MODS);
         addNav(side, "packs", "Сборки", Ui.PACKS);
         addNav(side, "textures", "Текстуры", Ui.TEXTURES);
         addNav(side, "shaders", "Шейдеры", Ui.SHADERS);
         addNav(side, "skins", "Скины", Ui.SKIN);
-        side.add(Box(10));
+        side.add(section("ИГРА"));
         addNav(side, "versions", "Версии", Ui.VERSIONS);
         addNav(side, "instances", "Установки", Ui.FOLDER);
         side.add(javax.swing.Box.createVerticalGlue());
@@ -152,6 +154,7 @@ public final class MainFrame extends JFrame {
                 });
                 setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
                 Account.addListener(this::repaint);
+                Skins.addListener(() -> javax.swing.SwingUtilities.invokeLater(this::repaint));
             }
 
             @Override
@@ -165,14 +168,7 @@ public final class MainFrame extends JFrame {
                 int s = 36;
                 int y = (getHeight() - s) / 2;
                 String nm = a == null ? I18n.t("Войти") : a.name;
-                int hv = Math.abs(nm.hashCode());
-                g.setColor(Color.getHSBColor((hv % 360) / 360f, 0.45f, 0.55f));
-                g.fillRoundRect(20, y, s, s, 8, 8);
-                g.setColor(Color.WHITE);
-                g.setFont(Ui.bold(18f));
-                FontMetrics fm = g.getFontMetrics();
-                String l = nm.substring(0, 1).toUpperCase();
-                g.drawString(l, 20 + (s - fm.stringWidth(l)) / 2, y + (s - fm.getHeight()) / 2 + fm.getAscent());
+                Heads.paint(g, 20, y, s, a, this);
                 g.setFont(Ui.bold(13.5f));
                 g.setColor(Color.WHITE);
                 g.drawString(Ui.ellipsize(nm, g.getFontMetrics(), 140), 66, y + 15);
@@ -186,6 +182,16 @@ public final class MainFrame extends JFrame {
         chip.setPreferredSize(new Dimension(224, 54));
         chip.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
         return chip;
+    }
+
+    private static java.awt.Component section(String text) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setOpaque(false);
+        p.setBorder(new EmptyBorder(14, 28, 6, 10));
+        p.add(Ui.label(text, 10.5f, new Color(0x6F7480), true), BorderLayout.WEST);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        p.setAlignmentX(LEFT_ALIGNMENT);
+        return p;
     }
 
     private static java.awt.Component Box(int h) {
@@ -217,7 +223,54 @@ public final class MainFrame extends JFrame {
         return bar;
     }
 
+    /** Ctrl+1…9 — разделы по порядку, Ctrl+F — поиск на текущей вкладке каталога. */
+    private void installShortcuts() {
+        String[] order = {"home", "mods", "packs", "textures", "shaders", "skins", "versions", "instances", "settings"};
+        javax.swing.JComponent rp = getRootPane();
+        int mask = java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        for (int i = 0; i < order.length; i++) {
+            String k = order[i];
+            rp.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_1 + i, mask), "nav-" + k);
+            rp.getActionMap().put("nav-" + k, new javax.swing.AbstractAction() {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+                    show(k);
+                }
+            });
+        }
+        rp.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F, mask), "find");
+        rp.getActionMap().put("find", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                BrowsePanel b = current == null ? null : browse(current);
+                if (b == null) {
+                    show("mods");
+                    b = mods;
+                }
+                b.focusSearch();
+            }
+        });
+    }
+
+    private String current;
+
+    private BrowsePanel browse(String key) {
+        switch (key) {
+            case "mods":
+                return mods;
+            case "packs":
+                return packs;
+            case "textures":
+                return textures;
+            case "shaders":
+                return shaders;
+            default:
+                return null;
+        }
+    }
+
     public void show(String key) {
+        current = key;
         for (Map.Entry<String, Ui.NavButton> e : navs.entrySet()) e.getValue().setSelectedNav(e.getKey().equals(key));
         boolean home = key.equals("home");
         topBar.setVisible(!home);

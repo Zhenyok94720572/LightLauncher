@@ -202,7 +202,9 @@ public final class InstancesPanel extends JPanel {
             g.setFont(Ui.font(12.5f));
             g.setColor(Ui.MUTED);
             String path = p.gameDir == null ? "" : p.gameDir.toString();
-            g.drawString(Ui.ellipsize(p.subtitle() + "   " + path, g.getFontMetrics(), w - 64 - 12), 64, 45);
+            Stats.Entry st = Stats.get(p.id);
+            String played = st.seconds > 0 ? "   ·   " + I18n.t("наиграно ") + Stats.duration(st.seconds) : "";
+            g.drawString(Ui.ellipsize(p.subtitle() + played + "   ·   " + path, g.getFontMetrics(), w - 64 - 12), 64, 45);
             g.dispose();
         }
 

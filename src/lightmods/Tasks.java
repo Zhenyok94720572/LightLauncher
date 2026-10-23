@@ -106,7 +106,7 @@ public final class Tasks {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            g.setColor(new Color(0x2C2C2E));
+            g.setColor(Ui.LINE);
             g.fillRect(0, 0, getWidth(), 1);
         }
 
@@ -129,6 +129,7 @@ public final class Tasks {
         }
 
         void done(String text) {
+            Toast.show(text, Toast.Kind.OK);
             label.setForeground(new Color(0x7ED957));
             label.setText(text);
             bar.setVisible(false);
@@ -136,6 +137,7 @@ public final class Tasks {
         }
 
         void fail(String text) {
+            Toast.show(text, Toast.Kind.ERROR);
             label.setForeground(new Color(0xFF7B72));
             label.setText(text);
             bar.setVisible(false);
@@ -143,6 +145,7 @@ public final class Tasks {
         }
 
         public void info(String text) {
+            Toast.show(text, Toast.Kind.INFO);
             label.setForeground(Ui.MUTED);
             label.setText(text);
         }

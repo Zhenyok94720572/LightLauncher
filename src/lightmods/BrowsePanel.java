@@ -213,6 +213,11 @@ public final class BrowsePanel extends JPanel {
     }
 
     /** Вызывается при открытии вкладки. */
+    public void focusSearch() {
+        search.requestFocusInWindow();
+        search.selectAll();
+    }
+
     public void onShow() {
         if (!loadedOnce || dirty) {
             loadedOnce = true;

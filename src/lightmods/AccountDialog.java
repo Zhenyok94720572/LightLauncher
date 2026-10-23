@@ -68,6 +68,16 @@ public final class AccountDialog {
                 t.add(Ui.label(a.name + (cur ? "   (выбран)" : ""), 14.5f, Color.WHITE, true));
                 t.add(Ui.label(a.isMs() ? "Microsoft · лицензия" : a.isEly() ? "Ely.by" : "Офлайн", 12f, Ui.MUTED, false));
                 p.add(t, BorderLayout.CENTER);
+                JComponent head = new JComponent() {
+                    @Override
+                    protected void paintComponent(java.awt.Graphics g0) {
+                        Graphics2D g = Ui.aa(g0);
+                        Heads.paint(g, 0, 0, 36, a, list);
+                        g.dispose();
+                    }
+                };
+                head.setPreferredSize(new Dimension(36, 36));
+                p.add(head, BorderLayout.WEST);
                 return p;
             }
         });

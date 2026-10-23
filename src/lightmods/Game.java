@@ -65,7 +65,25 @@ public final class Game {
 
     public static void kill(String profileId) {
         Process p = RUNNING.get(profileId);
-        if (p != null) p.destroy();
+        if (p != null) {
+            KILLED.add(profileId);
+            p.destroy();
+        }
+    }
+
+    /** Установки, игру в которых закрыли из лаунчера: их код выхода — не ошибка. */
+    public static final java.util.Set<String> KILLED = ConcurrentHashMap.newKeySet();
+    /** Последние строки вывода игры по установкам — для окна «игра вылетела». */
+    public static final Map<String, java.util.Deque<String>> TAIL = new ConcurrentHashMap<>();
+    /** Время старта текущего запуска. */
+    public static final Map<String, Long> STARTED = new ConcurrentHashMap<>();
+
+    public static List<String> tail(String profileId) {
+        java.util.Deque<String> d = TAIL.get(profileId);
+        if (d == null) return new ArrayList<>();
+        synchronized (d) {
+            return new ArrayList<>(d);
+        }
     }
 
     // ------------------------------------------------------------------ ОС
@@ -760,11 +778,23 @@ public final class Game {
         ProcessBuilder pb = new ProcessBuilder(plan.command).directory(plan.workDir.toFile()).redirectErrorStream(true);
         Process pr = pb.start();
         RUNNING.put(prof.id, pr);
+        KILLED.remove(prof.id);
+        java.util.ArrayDeque<String> tail = new java.util.ArrayDeque<>();
+        TAIL.put(prof.id, tail);
+        long t0 = System.currentTimeMillis();
+        STARTED.put(prof.id, t0);
+        Stats.started(prof.id);
         fire();
         Thread t = new Thread(() -> {
             try (BufferedReader r = new BufferedReader(new InputStreamReader(pr.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
-                while ((line = r.readLine()) != null) Log.i("[игра] " + line);
+                while ((line = r.readLine()) != null) {
+                    Log.i("[игра] " + line);
+                    synchronized (tail) {
+                        tail.addLast(line);
+                        if (tail.size() > 400) tail.removeFirst();
+                    }
+                }
             } catch (IOException ignored) {
                 // процесс завершён
             }
@@ -775,6 +805,8 @@ public final class Game {
                 return;
             }
             RUNNING.remove(prof.id);
+            STARTED.remove(prof.id);
+            Stats.finished(prof.id, System.currentTimeMillis() - t0);
             Log.i("Игра завершилась с кодом " + code);
             LAST_EXIT.put(prof.id, code);
             fire();
