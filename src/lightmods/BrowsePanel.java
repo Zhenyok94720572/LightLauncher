@@ -173,7 +173,7 @@ public final class BrowsePanel extends JPanel {
         State.addListener(() -> {
             updateFilterInfo();
             dirty = true;
-            if (isShowing() && compat.isSelected()) {
+            if (isShowing() && (compat.isSelected() || loadedOnce)) {
                 dirty = false;
                 reload();
             }
@@ -293,10 +293,20 @@ public final class BrowsePanel extends JPanel {
         });
     }
 
+    /** Проект считается установленным, только если его файл ещё лежит в папке установки (его могли удалить вручную). */
+    private boolean stillInstalled(Mc.Profile inst, Map<String, Object> reg, String id) {
+        if (!reg.containsKey(id)) return false;
+        Map<String, Object> e = Json.map(reg.get(id));
+        String file = Json.str(e, "file", null);
+        if (file == null) return false;
+        java.nio.file.Path dir = inst.gameDir.resolve(Modrinth.subdirFor(Json.str(e, "type", type)));
+        return java.nio.file.Files.exists(dir.resolve(file)) || java.nio.file.Files.exists(dir.resolve(file + ".disabled"));
+    }
+
     private void append(List<Modrinth.Hit> hits, Mc.Profile inst) {
         Map<String, Object> reg = inst == null ? Map.of() : Mc.registry(inst.gameDir);
         for (Modrinth.Hit h : hits) {
-            Card c = new Card(h, reg.containsKey(h.id) && !type.equals("modpack"));
+            Card c = new Card(h, !type.equals("modpack") && inst != null && stillInstalled(inst, reg, h.id));
             list.add(c);
             list.add(Box.createVerticalStrut(8));
         }

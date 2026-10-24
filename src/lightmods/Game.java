@@ -298,6 +298,44 @@ public final class Game {
         final List<Future<?>> fs = new ArrayList<>();
         final AtomicInteger done = new AtomicInteger();
         int total;
+        final List<Core.Job> jobs = new ArrayList<>();
+        final List<Runnable> afters = new ArrayList<>();
+
+        /** Загрузка файла: нативным ядром (одним пакетом), а если его нет — обычным потоком. after — действие после успешной загрузки. */
+        void download(String url, Path dest, String sha1, long size, Runnable after) {
+            jobs.add(new Core.Job(url, dest, sha1, size));
+            afters.add(after);
+        }
+
+        private void runJobs(Progress p, String text) throws IOException {
+            if (jobs.isEmpty()) return;
+            boolean viaCore = false;
+            if (Core.available()) {
+                try {
+                    int th = Math.max(4, Math.min(12, Runtime.getRuntime().availableProcessors() * 2));
+                    String err = Core.fetch(jobs, th, (d, t) -> p.set(t == 0 ? 1 : (double) d / t, text + " " + d + "/" + t));
+                    if (err != null) throw new IOException("Не удалось скачать:\n" + err);
+                    viaCore = true;
+                } catch (IOException e) {
+                    if (e.getMessage() != null && e.getMessage().startsWith("Не удалось скачать")) throw e;
+                    Log.i("Нативное ядро не сработало (" + e.getMessage() + "), качаю средствами Java");
+                }
+            }
+            for (int i = 0; i < jobs.size(); i++) {
+                Core.Job j = jobs.get(i);
+                Runnable after = afters.get(i);
+                if (viaCore) {
+                    if (after != null) submit(after);
+                } else {
+                    submit(() -> {
+                        fetch(j.url, j.dest, j.sha1, j.size);
+                        if (after != null) after.run();
+                    });
+                }
+            }
+            jobs.clear();
+            afters.clear();
+        }
 
         void submit(Runnable r) {
             total++;
@@ -312,6 +350,7 @@ public final class Game {
 
         void await(Progress p, String text) throws IOException {
             try {
+                runJobs(p, text);
                 for (Future<?> f : fs) {
                     try {
                         f.get();
@@ -462,7 +501,7 @@ public final class Game {
                 String url = Json.str(raw, "url");
                 if (url == null) continue;
                 if (Json.bool(f, "executable")) exec.add(dest);
-                pool.submit(() -> fetch(url, dest, Json.str(raw, "sha1"), Json.num(raw, "size")));
+                pool.download(url, dest, Json.str(raw, "sha1"), Json.num(raw, "size"), null);
             }
         }
         try {
@@ -524,21 +563,19 @@ public final class Game {
             List<String> names = e.getValue();
             // уже скачанное и не требующее копий не ставим в очередь: при запуске игры это тысячи лишних задач
             if (fresh(obj, size) && !virtual && !mapRes) continue;
-            pool.submit(() -> {
-                fetch(RESOURCES + hash.substring(0, 2) + "/" + hash, obj, hash, size);
-                if (virtual || mapRes) {
-                    for (String name : names) {
-                        Path extra = virtual ? virtualDir.resolve(name) : resDir.resolve(name);
-                        if (fresh(extra, size)) continue;
-                        try {
-                            Files.createDirectories(extra.getParent());
-                            Files.copy(obj, extra, StandardCopyOption.REPLACE_EXISTING);
-                        } catch (IOException ex) {
-                            throw new Unchecked(ex);
-                        }
+            Runnable copies = (virtual || mapRes) ? () -> {
+                for (String name : names) {
+                    Path extra = virtual ? virtualDir.resolve(name) : resDir.resolve(name);
+                    if (fresh(extra, size)) continue;
+                    try {
+                        Files.createDirectories(extra.getParent());
+                        Files.copy(obj, extra, StandardCopyOption.REPLACE_EXISTING);
+                    } catch (IOException ex) {
+                        throw new Unchecked(ex);
                     }
                 }
-            });
+            } : null;
+            pool.download(RESOURCES + hash.substring(0, 2) + "/" + hash, obj, hash, size, copies);
         }
         try {
             pool.await(p, "Ассеты");
@@ -657,7 +694,7 @@ public final class Game {
                 if (!Files.isRegularFile(l.path)) Log.i("Предупреждение: нет библиотеки и ссылки на неё: " + l.name);
                 continue;
             }
-            pool.submit(() -> fetch(l.url, l.path, l.sha1, l.size));
+            pool.download(l.url, l.path, l.sha1, l.size, null);
         }
         try {
             pool.await(p.sub(0.05, 0.25), "Библиотеки");
@@ -752,7 +789,8 @@ public final class Game {
         plan.workDir = gameDir;
         plan.versionId = vid;
         plan.command.add(java.toAbsolutePath().toString());
-        int ram = Mc.autoRam ? Ram.recommended(prof) : Math.max(512, Mc.ramMb);
+        int own = InstRam.get(prof.id);
+        int ram = own > 0 ? own : (Mc.autoRam ? Ram.recommended(prof) : Math.max(512, Mc.ramMb));
         plan.command.add("-Xmx" + ram + "M");
         // стартовый размер кучи побольше: иначе тяжёлая сборка при загрузке много раз расширяет память и делает полные сборки мусора
         plan.command.add("-Xms" + (Mc.optimizeJvm ? Math.min(ram, 2048) : Math.min(512, Math.max(256, ram / 4))) + "M");
@@ -760,7 +798,7 @@ public final class Game {
         if (Mc.optimizeJvm && !userGc) {
             for (String a : Ram.JVM_FLAGS) plan.command.add(a);
         }
-        Log.i("Память игры: " + ram + " МБ" + (Mc.autoRam ? " (авто)" : "") + (Mc.optimizeJvm ? ", оптимизация JVM включена" : ""));
+        Log.i("Память игры: " + ram + " МБ" + (own > 0 ? " (для установки)" : Mc.autoRam ? " (авто)" : "") + (Mc.optimizeJvm ? ", оптимизация JVM включена" : ""));
         if (Mc.jvmArgs != null && !Mc.jvmArgs.isBlank()) {
             for (String a : Mc.jvmArgs.trim().split("\\s+")) plan.command.add(a);
         }

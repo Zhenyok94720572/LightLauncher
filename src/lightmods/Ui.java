@@ -1067,7 +1067,16 @@ public final class Ui {
     }
 
     public static void paintHero(Graphics2D g, int w, int h, long timeMs) {
+        paintHero(g, w, h, timeMs, null);
+    }
+
+    public static void paintHero(Graphics2D g, int w, int h, long timeMs, java.awt.image.ImageObserver obs) {
         heroLayers(w, h);
+        if (Background.paint(g, w, h, obs)) {
+            g.drawImage(heroShade, 0, 0, null);
+            return;
+        }
+        if (Mc.freezeClouds) timeMs = 40000;
         g.drawImage(heroSky, 0, 0, null);
         int b = Math.max(22, h / 20);
         Color white = new Color(255, 255, 255, 225);

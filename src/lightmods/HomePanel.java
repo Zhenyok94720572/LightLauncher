@@ -33,7 +33,7 @@ public final class HomePanel extends JPanel {
                 Graphics2D g = Ui.aa(g0);
                 int w = getWidth();
                 int h = getHeight();
-                Ui.paintHero(g, w, h, System.currentTimeMillis());
+                Ui.paintHero(g, w, h, System.currentTimeMillis(), this);
                 int pad = 48;
                 int s = 76;
                 int y = 40;
@@ -58,6 +58,7 @@ public final class HomePanel extends JPanel {
         anim.addActionListener(e -> {
             java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(hero);
             if (w == null || !w.isActive() || (w instanceof java.awt.Frame && (((java.awt.Frame) w).getExtendedState() & java.awt.Frame.ICONIFIED) != 0)) return;
+            if (Mc.freezeClouds || Background.has()) return;
             long now = System.currentTimeMillis();
             if (now - lastFrame[0] < (Tasks.busy() || isAnyGameRunning() ? 140 : 45)) return;
             lastFrame[0] = now;
@@ -229,9 +230,13 @@ public final class HomePanel extends JPanel {
         ps.sort((a, b) -> Long.compare(Stats.get(b.id).lastPlayed, Stats.get(a.id).lastPlayed));
         int n = 0;
         for (Mc.Profile p : ps) {
-            if (n++ >= 4) break;
+            if (Stats.get(p.id).lastPlayed <= 0) continue;
+            if (n++ >= 3) break;
             if (recentRow.getComponentCount() > 0) recentRow.add(javax.swing.Box.createHorizontalStrut(12));
             recentRow.add(new RecentCard(p));
+        }
+        if (recentRow.getComponentCount() == 0 && !ps.isEmpty()) {
+            recentRow.add(Ui.label("Здесь появятся установки, в которые вы играли", 13f, Ui.MUTED, false));
         }
         if (ps.isEmpty()) {
             Ui.McButton mk = new Ui.McButton("Создать первую установку", Ui.McButton.Kind.GREEN).size(14f);
@@ -321,6 +326,14 @@ public final class HomePanel extends JPanel {
 
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+                        javax.swing.JPopupMenu pm = new javax.swing.JPopupMenu();
+                        javax.swing.JMenuItem ic = new javax.swing.JMenuItem(I18n.t("Значок…"));
+                        ic.addActionListener(a -> IconPicker.pick(RecentCard.this, p));
+                        pm.add(ic);
+                        pm.show(RecentCard.this, e.getX(), e.getY());
+                        return;
+                    }
                     State.select(p.id);
                     if (e.getClickCount() >= 2 && playBtn != null && playBtn.isEnabled() && !Game.isRunning(p.id)) launch(playBtn);
                 }
@@ -375,6 +388,7 @@ public final class HomePanel extends JPanel {
 
     private void gameChanged() {
         javax.swing.SwingUtilities.invokeLater(() -> {
+            restoreLauncher();
             for (Mc.Profile p : State.profiles()) {
                 Integer code = Game.LAST_EXIT.get(p.id);
                 if (code != null && !Game.isRunning(p.id)) {
@@ -428,11 +442,45 @@ public final class HomePanel extends JPanel {
             Game.Plan plan = Game.prepare(p, s, prog);
             Skins.applyForLaunch(p, fa);
             Game.start(p, plan, s);
+            if (Mc.closeOnLaunch) closeLauncherSoon(p);
         }, err -> {
             preparing.remove(p.id);
             if (err != null) Dlg.message(this, "Не удалось запустить игру", Tasks.friendly(err));
             else Tasks.bar.info("Игра запущена — установка «" + p.name + "», игрок " + fa.name);
             updatePlay();
         });
+    }
+
+    private volatile boolean hiddenForGame;
+
+    /** Прячет окно лаунчера через несколько секунд после старта игры; когда игра закроется, окно вернётся (см. gameChanged). */
+    private void closeLauncherSoon(Mc.Profile p) {
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(6000);
+            } catch (InterruptedException e) {
+                return;
+            }
+            if (!Game.isRunning(p.id)) return;
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+                if (w != null && Game.isRunning(p.id)) {
+                    hiddenForGame = true;
+                    w.setVisible(false);
+                }
+            });
+        }, "lightmods-hide");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void restoreLauncher() {
+        if (!hiddenForGame || isAnyGameRunning()) return;
+        hiddenForGame = false;
+        java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+        if (w == null) return;
+        if (w instanceof java.awt.Frame) ((java.awt.Frame) w).setExtendedState(java.awt.Frame.NORMAL);
+        w.setVisible(true);
+        w.toFront();
     }
 }

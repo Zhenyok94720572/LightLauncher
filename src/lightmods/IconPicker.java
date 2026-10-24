@@ -47,8 +47,8 @@ public final class IconPicker {
         JPanel body = new JPanel(new java.awt.BorderLayout(0, 10));
         body.setOpaque(false);
         body.add(Ui.label("Выберите значок для «" + p.name + "». Можно взять готовый или свою картинку (PNG/JPG).", 13f, Ui.MUTED, false), java.awt.BorderLayout.NORTH);
-        JPanel grid = new JPanel(new GridLayout(2, 5, 8, 8));
-        grid.setPreferredSize(new Dimension(5 * 64 + 4 * 8, 2 * 64 + 8 + 40));
+        JPanel grid = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        grid.setPreferredSize(new Dimension(2 * 72, 64 + 24));
         grid.setOpaque(false);
         grid.setBorder(new EmptyBorder(4, 0, 4, 0));
         List<Tile> tiles = new ArrayList<>();
@@ -69,6 +69,7 @@ public final class IconPicker {
             });
             tiles.add(t);
             grid.add(t);
+            grid.add(javax.swing.Box.createHorizontalStrut(8));
         }
         body.add(grid, java.awt.BorderLayout.CENTER);
         int r = Dlg.show(parent, "Значок установки", body, new String[]{"Применить", "Свой файл…", "По умолчанию", "Отмена"}, 0);

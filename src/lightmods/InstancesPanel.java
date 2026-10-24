@@ -50,6 +50,12 @@ public final class InstancesPanel extends JPanel {
             if (p == null) Dlg.message(this, "Выберите установку", "Выберите в списке установку, для которой нужен значок.");
             else IconPicker.pick(this, p);
         });
+        Ui.McButton ram = new Ui.McButton("Память…", Ui.McButton.Kind.DARK).size(13f);
+        ram.addActionListener(e -> {
+            Mc.Profile p = profList.getSelectedValue();
+            if (p == null) Dlg.message(this, "Выберите установку", "Выберите в списке установку, для которой нужно настроить память.");
+            else InstRam.edit(this, p);
+        });
         Ui.McButton remove = new Ui.McButton("Удалить", Ui.McButton.Kind.DARK).size(13f);
         select.addActionListener(e -> {
             Mc.Profile p = profList.getSelectedValue();
@@ -64,6 +70,13 @@ public final class InstancesPanel extends JPanel {
             if (p != null) Mc.openFolder(p.gameDir);
         });
         remove.addActionListener(e -> removeProfile());
+        profList.getInputMap(JComponent.WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "del");
+        profList.getActionMap().put("del", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                removeProfile();
+            }
+        });
         Ui.McButton isolate = new Ui.McButton("Изолировать…", Ui.McButton.Kind.GREEN).size(13f);
         Ui.McButton fromVer = new Ui.McButton("Из скачанной версии…", Ui.McButton.Kind.DARK).size(13f);
         isolate.addActionListener(e -> {
@@ -83,7 +96,7 @@ public final class InstancesPanel extends JPanel {
             Mc.Installed v = Dlg.choose(this, "Скачанные версии", "Выберите уже скачанную версию — для неё будет создана отдельная изолированная установка.", vs);
             if (v != null) isolateVersion(v.id, v.id);
         });
-        add(section("Установки", "Все установки лаунчера. «Изолировать» создаёт для версии отдельную папку игры: свои моды, миры и настройки.", profList, select, isolate, fromVer, content, icon, folder, remove));
+        add(section("Установки", "Все установки лаунчера. «Изолировать» создаёт для версии отдельную папку игры: свои моды, миры и настройки.", profList, select, isolate, fromVer, content, icon, ram, folder, remove));
 
         State.addListener(this::reloadProfiles);
         reloadProfiles();
@@ -156,18 +169,22 @@ public final class InstancesPanel extends JPanel {
     }
 
     private void removeProfile() {
-        Mc.Profile p = profList.getSelectedValue();
+        removeProfile(this, profList.getSelectedValue());
+    }
+
+    /** Удаляет установку с подтверждением (используется и на главной). */
+    public static void removeProfile(java.awt.Component parent, Mc.Profile p) {
         if (p == null) return;
         Path inst = Mc.instancesDir().toAbsolutePath().normalize();
         boolean ours = p.gameDir.toAbsolutePath().normalize().startsWith(inst);
         String msg = "Удалить установку «" + p.name + "» из лаунчера?" + (ours ? "\n\nПапка с модами и мирами этой установки тоже будет удалена:\n" + p.gameDir : "\n\nФайлы игры останутся на диске.");
-        if (!Dlg.confirm(this, "Удаление установки", msg, "Удалить")) return;
+        if (!Dlg.confirm(parent, "Удаление установки", msg, "Удалить")) return;
         try {
             Mc.removeProfile(p.id);
             if (ours) Mc.deleteInstanceFiles(p.gameDir);
             State.refresh();
         } catch (IOException e) {
-            Dlg.message(this, "Ошибка", Tasks.friendly(e));
+            Dlg.message(parent, "Ошибка", Tasks.friendly(e));
         }
     }
 
@@ -347,6 +364,7 @@ public final class InstancesPanel extends JPanel {
                 if (Files.isDirectory(f)) Mc.deleteTree(f);
                 else Files.deleteIfExists(f);
                 load();
+                State.refresh();
             } catch (IOException e) {
                 Dlg.message(this, "Ошибка", Tasks.friendly(e));
             }

@@ -87,6 +87,8 @@ public final class SettingsPanel extends JPanel {
         north.add(javax.swing.Box.createVerticalStrut(12));
         north.add(buildLangCard());
         north.add(javax.swing.Box.createVerticalStrut(12));
+        north.add(buildLookCard());
+        north.add(javax.swing.Box.createVerticalStrut(14));
         north.add(buildSupportCard());
         north.add(javax.swing.Box.createVerticalStrut(12));
         north.add(buildLaunchCard());
@@ -183,6 +185,68 @@ public final class SettingsPanel extends JPanel {
             }
         });
         card.add(b, BorderLayout.EAST);
+        return card;
+    }
+
+    private JPanel buildLookCard() {
+        JPanel card = new JPanel(new GridBagLayout()) {
+            @Override
+            protected void paintComponent(Graphics g0) {
+                Graphics2D g = Ui.aa(g0);
+                Ui.card(g, 0, 0, getWidth(), getHeight(), Ui.CARD, Ui.BORDER);
+                g.dispose();
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(18, 20, 18, 20));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 190));
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.gridwidth = 3;
+        c.weightx = 1;
+        c.anchor = GridBagConstraints.WEST;
+        card.add(Ui.label("Оформление главной", 15f, java.awt.Color.WHITE, true), c);
+        c.gridy++;
+        c.insets = new Insets(8, 0, 0, 0);
+        javax.swing.JCheckBox freeze = Ui.check("Заморозить облака (стоят на месте)", Mc.freezeClouds);
+        freeze.addActionListener(e -> {
+            Mc.freezeClouds = freeze.isSelected();
+            Mc.saveConfig();
+            repaint();
+        });
+        card.add(freeze, c);
+        c.gridy++;
+        c.gridwidth = 1;
+        c.weightx = 0;
+        c.insets = new Insets(10, 0, 0, 8);
+        Ui.McButton pick = new Ui.McButton("Свой фон…", Ui.McButton.Kind.GREEN).size(13f);
+        Ui.McButton reset = new Ui.McButton("Сбросить фон", Ui.McButton.Kind.DARK).size(13f);
+        pick.addActionListener(e -> {
+            java.awt.Window w = javax.swing.SwingUtilities.getWindowAncestor(this);
+            java.awt.FileDialog fd = new java.awt.FileDialog(w instanceof java.awt.Frame ? (java.awt.Frame) w : null, I18n.t("Выберите картинку"), java.awt.FileDialog.LOAD);
+            fd.setVisible(true);
+            if (fd.getFile() == null) return;
+            try {
+                Background.set(new java.io.File(fd.getDirectory(), fd.getFile()).toPath());
+                Tasks.bar.info("Фон установлен");
+            } catch (Exception ex) {
+                Dlg.message(this, "Не удалось поставить фон", String.valueOf(ex.getMessage()));
+            }
+        });
+        reset.addActionListener(e -> {
+            Background.reset();
+            Tasks.bar.info("Фон сброшен");
+        });
+        card.add(pick, c);
+        c.gridx = 1;
+        c.weightx = 1;
+        card.add(reset, c);
+        c.gridx = 0;
+        c.gridy++;
+        c.gridwidth = 3;
+        c.insets = new Insets(8, 0, 0, 0);
+        card.add(Ui.label("Фон: картинка PNG/JPG или анимированный GIF. Видео (mp4) не поддерживается — переведите его в GIF.", 12f, Ui.MUTED, false), c);
         return card;
     }
 
@@ -317,16 +381,35 @@ public final class SettingsPanel extends JPanel {
         c.gridy++;
         c.insets = new Insets(6, 0, 0, 0);
         ramField.setText(String.valueOf(Mc.ramMb));
-        RamSlider rs = new RamSlider(Mc.ramMb, v -> ramField.setText(String.valueOf(v)));
+        RamSlider rs = new RamSlider(Mc.ramMb, v -> {
+            ramField.setText(String.valueOf(v));
+            Mc.ramMb = v;
+            Mc.saveConfig();
+        });
         rs.setEnabled(!Mc.autoRam);
         autoRamCb.setSelected(Mc.autoRam);
-        autoRamCb.addActionListener(e -> rs.setEnabled(!autoRamCb.isSelected()));
+        autoRamCb.addActionListener(e -> {
+            rs.setEnabled(!autoRamCb.isSelected());
+            Mc.autoRam = autoRamCb.isSelected();
+            Mc.saveConfig();
+        });
         card.add(autoRamCb, c);
         c.gridy++;
         card.add(rs, c);
         c.gridy++;
         optCb.setSelected(Mc.optimizeJvm);
+        optCb.addActionListener(e -> {
+            Mc.optimizeJvm = optCb.isSelected();
+            Mc.saveConfig();
+        });
         card.add(optCb, c);
+        c.gridy++;
+        javax.swing.JCheckBox closeCb = Ui.check("Закрывать лаунчер при запуске игры", Mc.closeOnLaunch);
+        closeCb.addActionListener(e -> {
+            Mc.closeOnLaunch = closeCb.isSelected();
+            Mc.saveConfig();
+        });
+        card.add(closeCb, c);
         c.gridy++;
         c.insets = new Insets(12, 0, 0, 0);
         card.add(Ui.label("Дополнительные аргументы JVM", 13f, Ui.MUTED, false), c);

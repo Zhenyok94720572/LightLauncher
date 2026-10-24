@@ -15,7 +15,7 @@ public class Shots8 {
         Files.writeString(Mc.profilesFile(), "{\"profiles\":{\"a\":{\"name\":\"My build\",\"lastVersionId\":\"1.16.5\"}},\"settings\":{},\"version\":3}");
         Mc.agreed = Agreement.VERSION;
         I18n.set(a[0]);
-        Icons.setBuiltin("a","creeper"); Account.load(); Account.addOffline("Steve_1");
+        Stats.started("a"); Account.load(); Account.addOffline("Steve_1");
         SwingUtilities.invokeAndWait(() -> {
             try { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()); } catch (Exception e) {}
             MainFrame f = new MainFrame(); f.setVisible(true);
@@ -31,7 +31,7 @@ public class Shots8 {
                     Thread.sleep(2500);
                     SwingUtilities.invokeAndWait(() -> { try { shot(f.getContentPane(), "/tmp/s8_mods_" + a[0] + ".png"); } catch (Exception e) { e.printStackTrace(); } });
                 } catch (Exception e) { e.printStackTrace(); }
-                SwingUtilities.invokeLater(() -> { try { Mc.Profile p = Mc.readProfiles().get(0); new Thread(() -> IconPicker.pick(f.getContentPane(), p)).start(); } catch (Exception e) { e.printStackTrace(); } });
+                SwingUtilities.invokeLater(() -> { try { Mc.Profile p = Mc.readProfiles().get(0); new Thread(() -> System.out.print("")).start(); } catch (Exception e) { e.printStackTrace(); } });
                 try { Thread.sleep(1500); java.awt.Robot r = new java.awt.Robot(); BufferedImage im = r.createScreenCapture(new Rectangle(Toolkit.getDefaultToolkit().getScreenSize())); ImageIO.write(im, "png", new java.io.File("/tmp/s8_picker.png")); } catch (Exception e) { e.printStackTrace(); }
                 System.exit(0);
             }).start();

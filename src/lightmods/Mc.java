@@ -48,6 +48,10 @@ public final class Mc {
     public static volatile boolean autoRam = true;
     /** Ускоряющие флаги JVM для игры (по умолчанию включено). */
     public static volatile boolean optimizeJvm = true;
+    /** Закрывать лаунчер после запуска игры. */
+    public static volatile boolean closeOnLaunch = false;
+    /** Облака на главной стоят на месте. */
+    public static volatile boolean freezeClouds = false;
     public static volatile String jvmArgs = "";
     public static volatile String msClientId = "";
 
@@ -106,6 +110,8 @@ public final class Mc {
                 jvmArgs = Json.str(m, "jvmArgs", "");
                 msClientId = Json.str(m, "msClientId", "");
                 if (m.containsKey("autoRam")) autoRam = Json.bool(m, "autoRam");
+                if (m.containsKey("closeOnLaunch")) closeOnLaunch = Json.bool(m, "closeOnLaunch");
+                if (m.containsKey("freezeClouds")) freezeClouds = Json.bool(m, "freezeClouds");
                 if (m.containsKey("optimizeJvm")) optimizeJvm = Json.bool(m, "optimizeJvm");
                 long r = Json.num(m, "ramMb");
                 if (r >= 512) ramMb = (int) r;
@@ -130,6 +136,8 @@ public final class Mc {
             m.put("ramMb", (long) ramMb);
             m.put("autoRam", autoRam);
             m.put("optimizeJvm", optimizeJvm);
+            m.put("closeOnLaunch", closeOnLaunch);
+            m.put("freezeClouds", freezeClouds);
             Files.writeString(CFG, Json.stringify(m, true));
         } catch (Exception e) {
             Log.i("Не удалось сохранить конфиг: " + e.getMessage());

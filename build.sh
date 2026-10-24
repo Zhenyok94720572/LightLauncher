@@ -15,6 +15,13 @@ cp -r res/* "$OUT/main/"
 javac -encoding UTF-8 --release 17 -cp "$OUT/main" -d "$OUT/setup" setup-src/lightmods/setup/*.java
 [ "$1" = "nojar" ] && exit 0
 
+if python3 -m ziglang version >/dev/null 2>&1; then
+  echo "== нативное ядро llcore (C++)"
+  mkdir -p "$OUT/main/native"
+  python3 -m ziglang c++ -target x86_64-windows-gnu -std=c++17 -O2 -s -static -Wl,--subsystem,windows \
+    -o "$OUT/main/native/llcore.exe" native/llcore.cpp -lwinhttp
+fi
+
 printf 'Main-Class: lightmods.App\nImplementation-Title: Light Launcher\nImplementation-Version: %s\n' "$VER" > "$OUT/app.mf"
 printf 'Main-Class: lightmods.setup.Setup\nImplementation-Title: Light Launcher Setup\n' > "$OUT/setup.mf"
 jar cfm dist/LightLauncher.jar "$OUT/app.mf" -C "$OUT/main" .
