@@ -390,7 +390,7 @@ public final class Setup {
         Files.writeString(dir.resolve("uninstall.cmd"), uninstall, StandardCharsets.UTF_8);
         String key = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\LightLauncher";
         String[][] vals = {
-                {"DisplayName", "Light Launcher"}, {"DisplayVersion", "1.1"}, {"Publisher", "Light Launcher"},
+                {"DisplayName", "Light Launcher"}, {"DisplayVersion", "1.2 beta"}, {"Publisher", "Light Launcher"},
                 {"InstallLocation", dir.toString()}, {"DisplayIcon", dir.resolve("LightLauncher.ico").toString()},
                 {"UninstallString", "\"" + dir.resolve("uninstall.cmd") + "\""}};
         for (String[] v : vals) {

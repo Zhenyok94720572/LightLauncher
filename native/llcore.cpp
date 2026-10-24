@@ -132,7 +132,7 @@ struct Http {
     // 0 — успех; иначе текст ошибки в err
     bool get(const Url& u, Sink sink, void* ctx, std::string& err) {
         if (!ses) {
-            ses = WinHttpOpen(L"LightLauncher-core/1.2", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+            ses = WinHttpOpen(L"LightLauncher-core/1.2-beta", WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
             if (!ses) { err = "WinHttpOpen"; return false; }
             WinHttpSetTimeouts(ses, 15000, 15000, 30000, 60000);
             DWORD pol = WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS;
