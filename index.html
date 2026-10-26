@@ -182,7 +182,7 @@ footer{padding:44px 0 40px;color:var(--muted);font-size:13px;display:flex;gap:14
         <label for="acctNick" data-i="acc_nick_l"></label>
         <input id="acctNick" name="username" type="text" autocomplete="username" maxlength="8" required>
         <label for="acctPass" data-i="acc_pass_l"></label>
-        <input id="acctPass" name="password" type="password" autocomplete="current-password" maxlength="72" required>
+        <input id="acctPass" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="8" required>
         <input id="acctHp" name="hp_website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
         <div class="acct-err" id="acctErr"></div>
         <button class="btn primary" type="submit" id="acctSubmit" data-i="acc_login_btn"></button>
@@ -202,7 +202,7 @@ footer{padding:44px 0 40px;color:var(--muted);font-size:13px;display:flex;gap:14
 const L={
 ru:{nav_demo:"Интерфейс",nav_feat:"Возможности",nav_dl:"Скачать",nav_bot:"Наш бот",nav_sup:"Поддержать",nav_acc:"Аккаунт",
 acc_login_h:"Вход",acc_reg_h:"Регистрация",acc_tab_login:"Вход",acc_tab_reg:"Регистрация",
-acc_nick_l:"Ник (3-8 букв латиницы и цифр)",acc_pass_l:"Пароль",acc_login_btn:"Войти",acc_reg_btn:"Создать аккаунт",
+acc_nick_l:"Ник (3-8 символов, латиница и/или цифры)",acc_pass_l:"Пароль (ровно 8 символов)",acc_login_btn:"Войти",acc_reg_btn:"Создать аккаунт",
 acc_cab_h:"Личный кабинет",acc_cab_nick:"Ник",acc_cab_tier:"Тариф",acc_cab_exp:"Действует до",acc_logout:"Выйти",
 h1:"Minecraft лаунчер, без всего что бы мешало <em>играть</em>",
 lead:"Запускает игру, позволяет ставить моды, сборки, текстуры и шейдеры не выходя из лаунчера и держит каждую установку в отдельной папке. Без прав администратора.",
@@ -234,7 +234,7 @@ don_code_known:"Ваш код для комментария к донату — 
 foot1:"Неофициальный проект. Не связан с Mojang, Microsoft и Modrinth. Minecraft — собственность Mojang AB."},
 en:{nav_demo:"Interface",nav_feat:"Features",nav_dl:"Download",nav_bot:"Our bot",nav_sup:"Support",nav_acc:"Account",
 acc_login_h:"Sign in",acc_reg_h:"Create account",acc_tab_login:"Sign in",acc_tab_reg:"Register",
-acc_nick_l:"Name (3-8 Latin letters/digits)",acc_pass_l:"Password",acc_login_btn:"Sign in",acc_reg_btn:"Create account",
+acc_nick_l:"Name (3-8 chars, letters and/or digits)",acc_pass_l:"Password (exactly 8 chars)",acc_login_btn:"Sign in",acc_reg_btn:"Create account",
 acc_cab_h:"My account",acc_cab_nick:"Name",acc_cab_tier:"Plan",acc_cab_exp:"Valid until",acc_logout:"Sign out",
 h1:"A Minecraft launcher that <em>stays out</em> of your way",
 lead:"It starts the game, lets you install mods, modpacks, textures and shaders without leaving the launcher, and keeps every instance in its own folder. No administrator rights.",
